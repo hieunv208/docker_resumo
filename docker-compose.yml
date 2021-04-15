@@ -1,0 +1,28 @@
+  resumo_server:
+    build: .
+    dockerfile: ./docker/Dockerfile
+    working_dir: /var/www/html
+    container_name: resumo_nginx
+    dns:
+      - 8.8.8.8
+      - 4.4.4.4
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx_log:/var/log/nginx
+      - ./docker/php-fpm/php-fpm.log:/var/log/php-fpm.log
+      - ./docker/config/app.conf:/etc/nginx/conf.d/app.conf
+    links:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: resumo_mysql
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+

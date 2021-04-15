@@ -22,17 +22,19 @@ class User extends Authenticatable
         return $this->hasOne(UserInfo::class);
     }
 
-    public function code_verified()
+    public function support()
     {
-        return $this->hasOne(CodeVerify::class);
+        return $this->hasMany(Support::class);
     }
+
 
     protected $table = 'users';
     protected $fillable = [
         'email',
         'name',
         'active',
-        'user_type'
+        'user_type',
+        'code_sms'
     ];
 
     /**

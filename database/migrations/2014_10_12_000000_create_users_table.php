@@ -17,9 +17,12 @@ class CreateUsersTable extends Migration
             $table->increments('id');
             $table->string('name');
             $table->string('email')->unique();
+            $table->bigInteger('code_sms');
+            $table->integer('user_status')->default(0);
+            $table->dateTime('taikai_experied')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('phone_number')->nullable();
-            $table->boolean('active')->default(0);
+            $table->dateTime('last_login_time');
             $table->integer('user_type');
             $table->rememberToken();
             $table->timestamps();

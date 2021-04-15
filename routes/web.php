@@ -14,10 +14,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return 'RESUMO - FROM VIETNAM';
-});
-
-Route::get('/hello', function () {
-    return 'RESUMO - FROM VIETNAM';
+    return view('welcome');
 });
 

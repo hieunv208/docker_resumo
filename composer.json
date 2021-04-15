@@ -13,7 +13,8 @@
         "laravel/nexmo-notification-channel": "^2.5",
         "laravel/sanctum": "^2.9",
         "laravel/tinker": "^2.5",
-        "nexmo/laravel": "^2.4"
+        "nexmo/laravel": "^2.4",
+        "twilio/sdk": "^6.21"
     },
     "require-dev": {
         "facade/ignition": "^2.5",

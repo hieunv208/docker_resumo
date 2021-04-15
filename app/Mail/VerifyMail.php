@@ -29,7 +29,7 @@ class VerifyMail extends Mailable
      */
     public function build()
     {
-        return $this->subject('Leon developer verification')
+        return $this->subject('コード認証')
         ->view('emails.verifymail');
     }
 }

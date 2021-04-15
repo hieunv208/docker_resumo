@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ItsolutionStuff.com</title>
+    <title>Leon Develop SMS</title>
 </head>
 <body>
-    <h1>{{ $data['sms_code'] }}</h1>
-   
-    <p>Thank you</p>
+    <p>コード認証: {{$data['sms_code']}}</p>
 </body>
 </html>

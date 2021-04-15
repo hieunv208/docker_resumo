@@ -2,143 +2,244 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UserInfoGakkuseiRequest;
+use App\Http\Requests\UserInfoRequest;
 use App\Mail\VerifyMail;
 use App\Models\User;
 use App\Models\UserInfo;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
+use Validator;
+use Twilio\Rest\Client;
 
 class LoginController extends Controller
 {
-    public function index(Request $request)
+    public function emailLogin(Request $request)
     {
-        $email = $request->email;
-        // Step 1: Email validation 
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
 
-        // Check email exits 
-        $user = User::where('email', $email)->first();
+        if ($validator->fails()) {
+            return \response()->json([
+                'message' => 'The email field is required'
+            ]);
+        }else {
+            $email = $request->email;
+            $user = User::where('email', $email)->count();
+            if ($user > 0) {
+//                 SMS code gen
+                $sms_code = mt_rand(100000, 999999);
+                //update code gen
+                $sms_update = User::where('email', $email)->update(['code_sms' => $sms_code]);
+                $data = [
+                    'sms_code' => $sms_code,
+                ];
+                Mail::to($email)->send((new \App\Mail\VerifyMail($data)));
+                return response()->json([
+                    'message' => 'Operation successfully'
+                ], 200);
 
-        if ($user) {
-            // SMS code gen 
 
-            $sms_code = mt_rand(100000, 999999);
-            //update code gen 
-            $sms_update = User::where('email', $email)
-                ->where('email', $email)
-                ->update(['code' => $sms_code]);
-
-            //send email 
-
-            $data = [
-                'sms_code' => $sms_code,
-            ];
-            Mail::to($email)->send(new VerifyMail($data));
-            return response()->json([
-                'message' => 'Operation successfully'
-            ], 202);
-        } else {
-            return response()->json([
-                'message' => 'User email not found'
-            ], 404);
+            } else {
+                return response()->json([
+                    'message' => 'Login by number phone instead'
+                ], 404);
+            }
         }
     }
 
-    public function postCode(Request $request)
+    public function postCodeEmail(Request $request)
     {
+        $code_sms = $request->code_sms;
+
+        $validator = Validator::make($request->all(), [
+            'code_sms' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return \response()->json([
+                'message' => 'Code SMS field is required'
+            ]);
+        } else {
+
+            $user_code = User::where('code_sms', $code_sms)->first();
+            if ($user_code) {
+                $time = Carbon::now()->format("Y-m-d H:m:s");
+                $user_code['last_login_time'] = $time;
+
+                $data = [
+                    "id" => $user_code['id'],
+                    "name" => $user_code['name'],
+                    "email" => $user_code['email'],
+                    "phone_number" => $user_code['phone_number'],
+                ];
+
+                return response()->json([
+                    'message' => 'Operation sucessfully',
+                    'data' => $data,
+                    'token' => $user_code->createToken('myapptoken')->plainTextToken,
+
+                ], 200);
+            } else {
+                return response()->json([
+                    'message' => 'Bad credentials'
+                ], 403);
+            }
+
+        }
+    }
+
+    public function store(Request $request)
+    {
+
+        $phone_number = $request->phone_number;
+        $user = User::where('phone_number', $phone_number)->count();
+        if ($user > 0) {
+            return response()->json([
+                'message' => 'Existed user. Login instead'
+            ]);
+        } else {
+            $LoginRequest = New RegisterRequest();
+            $validator = Validator::make($request->all(), $LoginRequest->rules(), $LoginRequest->messages());
+
+            if ($validator->fails()) {
+                return response()->json($validator->errors(), 422);
+            }
+            $user_type = $request->user_type;
+            $user_name = $request->name;
+            $email = $request->email;
+
+            if ($user_type == 0) {
+                $userInfoRequest = New UserInfoRequest();
+                $validator = Validator::make($request->all(), $userInfoRequest->rules(), $userInfoRequest->messages());
+
+                if ($validator->fails()) {
+                    return response()->json($validator->errors(), 422);
+                }
+            } else {
+                $LoginRequest = New UserInfoGakkuseiRequest();
+                $validator = Validator::make($request->all(), $LoginRequest->rules(), $LoginRequest->messages());
+
+                if ($validator->fails()) {
+                    return response()->json($validator->errors(), 422);
+                }
+            }
+
+            $user = new User();
+            $user->name = $user_name;
+            $user->email = $email;
+            $user->user_type = $user_type;
+            $user->code_sms = '123456';
+            $user->phone_number = $phone_number;
+            $user->save();
+
+
+            $users = User::where('email', $request->email)->get();
+            foreach ($users as $user) {
+                $user = User::with('user_profile')->findOrFail($user->id);
+            }
+            if ($user['user_type'] == 0) {
+                if ($user->user_profile === null) {
+                    $menkyou_number = $request->menkyou_number;
+                    $ryouka = $request->ryouka;
+                    $workplace_name = $request->workplace_name;
+                    $occupation = $request->occupation;
+
+                    $infor = new UserInfo([
+                        'menkyou_number' => $menkyou_number,
+                        'ryouka' => $ryouka,
+                        'workplace_name' => $workplace_name,
+                        'occupation' => $occupation,
+                    ]);
+                    $user->user_profile()->save($infor);
+                }
+
+                return response()->json([
+                    'message' => 'Operation sucessfully',
+                    'data' => $user,
+                    'token' => $user->createToken('myapptoken')->plainTextToken,
+                ], 200);
+            } else {
+                if ($user->user_profile === null) {
+                    $dob = $request->dob;
+                    $university_name = $request->university_name;
+                    $year_graduated = $request->year_graduated;
+
+                    $infor = new UserInfo([
+                        'dob' => $dob . ' ' . '00:00:00',
+                        'university_name' => $university_name,
+                        'year_graduated' => $year_graduated,
+                    ]);
+                    $user->user_profile()->save($infor);
+                }
+
+                return response()->json([
+                    'message' => 'Operation sucessfully',
+                    'data' => $user,
+                    'token' => $user->createToken('myapptoken')->plainTextToken,
+                ], 200);
+            }
+        }
+    }
+
+    public function phoneLogin(Request $request)
+    {
+        $phone_number = $request->phone_number;
+        $usr = User::where('phone_number', $phone_number)->first();
+        if ($usr) {
+            $sms_code = mt_rand(100000, 999999);
+            $sms_update = User::where('email', $usr->email)
+                ->update(['code_sms' => $sms_code]);
+            $account_sid = getenv("TWILIO_SID");
+            $auth_token = getenv("TWILIO_AUTH_TOKEN");
+            $twilio_number = getenv("TWILIO_NUMBER");
+            $client = new Client($account_sid, $auth_token);
+            $phonenumber = substr($phone_number, 1);
+            $phone_format = "+84";
+            $phone_format .= "$phonenumber";
+            $body = "電話番号:" . $phone_format;
+            $body .= "コード認証: " . $sms_code;
+            $client->messages->create($phone_format,
+                ['from' => $twilio_number, 'body' => $body]);
+            return response()->json([
+                'message' => 'Send code to verify'
+            ], 200);
+
+        } else {
+            return response()->json([
+                'message' => 'Please register',
+            ], 200);
+        }
+    }
+
+    public function postCodePhone(Request $request)
+    {
+        $phone_number = $request->phone_number;
         $sms_code = $request->sms_code;
-
-        //validate sms_code
-        // #todo
-
-        $user_code = User::where('code', $sms_code)->first();
-
-
-        if ($user_code) {
+        $usr = User::where('phone_number', $phone_number)->where('code_sms', $sms_code)->first();
+        if ($usr) {
             return response()->json([
                 'message' => 'Operation sucessfully',
-                'data' => $user_code,
-                'token' => $user_code->createToken('myapptoken')->plainTextToken,
+                'data' => $usr,
+                'token' => $usr->createToken('myapptoken')->plainTextToken,
             ], 200);
         } else {
             return response()->json([
                 'message' => 'Bad credentials'
             ], 403);
         }
+
+
     }
 
-    public function store(Request $request)
+    public function logout(Request $request)
     {
-        $field = $request->validate([
-            'name' => 'required',
-            'email' => 'required',
-            'user_type' => 'required',
+        $request->user()->currentAccessToken()->delete();
+        return \response()->json([
+            'message' => 'Logout success'
         ]);
-
-        $email = $request->email;
-        $user = User::where('email', $email)->first();
-
-        if ($user) {
-            return response()->json([
-                'message' => 'Existed user. Login instead'
-            ]);
-        } else {
-            $user_type = $field['user_type'];
-            $p = User::create([
-                'name' => $field['name'],
-                'email' => $field['email'],
-                'user_type' => $field['user_type'],
-                'active' => 0,
-            ]);
-            $users = User::where('email', $email)->get();
-            foreach ($users as $user) {
-                $user = User::with('user_profile')->findOrFail($user->id);
-            }
-            if ($user_type == 0) {
-                if ($user->user_profile === null) {
-                    $field = $request->validate([
-                        'menkyou_number' => 'required',
-                        'ryouka' => 'required',
-                        'workplace_name' => 'required',
-                        'occupation' => 'required',
-                    ]);
-                    $infor = new UserInfo([
-                        'menkyou_number' => $field['menkyou_number'],
-                        'ryouka' => $field['ryouka'],
-                        'workplace_name' => $field['workplace_name'],
-                        'occupation' => $field['occupation'],
-                    ]);
-                    $user->user_profile()->save($infor);
-                }
-
-                return response()->json([
-                    'message' => 'Operation sucessfully',
-                    'data' => $p,
-                    'token' => $p->createToken('myapptoken')->plainTextToken,
-                ], 200);
-            } else {
-                if ($user->user_profile === null) {
-                    $field = $request->validate([
-                        'dob' => 'required',
-                        'university_name' => 'required',
-                        'year_graduated' => 'required',
-                    ]);
-                    $infor = new UserInfo([
-                        'dob' => $field['dob'],
-                        'university_name' => $field['university_name'],
-                        'year_graduated' => $field['year_graduated'],
-                    ]);
-                    $user->user_profile()->save($infor);
-                }
-
-                return response()->json([
-                    'message' => 'Operation sucessfully',
-                    'data' => $p,
-                    'token' => $p->createToken('myapptoken')->plainTextToken,
-                ], 200);
-            }
-        }
-
     }
 }
