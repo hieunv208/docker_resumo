@@ -251,3 +251,8 @@
 172.17.0.1 - - [15/Apr/2021:06:47:24 +0000] "POST /api/login_request_email?email=hieuhanufit@gmail.com HTTP/1.1" 200 66 "-" "PostmanRuntime/7.26.10" "-"
 172.17.0.1 - - [15/Apr/2021:06:52:21 +0000] "POST /api/login_request_email?email=hieuhanufit@gmail.com HTTP/1.1" 200 66 "-" "PostmanRuntime/7.26.10" "-"
 172.17.0.1 - - [15/Apr/2021:06:55:19 +0000] "POST /api/login_request_email?email=hieuhanufit@gmail.com HTTP/1.1" 200 66 "-" "PostmanRuntime/7.26.10" "-"
+172.17.0.1 - - [15/Apr/2021:09:13:25 +0000] "GET / HTTP/1.1" 200 1872 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36" "-"
+172.17.0.1 - - [15/Apr/2021:09:13:25 +0000] "GET /favicon.ico HTTP/1.1" 200 0 "http://resumo.leo-system.com/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36" "-"
+172.17.0.1 - - [15/Apr/2021:09:34:20 +0000] "POST /api/login_request_mobile HTTP/1.1" 500 625864 "-" "PostmanRuntime/7.26.10" "-"
+172.17.0.1 - - [15/Apr/2021:10:35:47 +0000] "POST /api/login_request_mobile?phone_number=0335141096 HTTP/1.1" 500 626058 "-" "PostmanRuntime/7.26.10" "-"
+172.17.0.1 - - [15/Apr/2021:10:35:50 +0000] "POST /api/login_request_mobile?phone_number=0335141096 HTTP/1.1" 500 626154 "-" "PostmanRuntime/7.26.10" "-"
