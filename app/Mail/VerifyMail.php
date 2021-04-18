@@ -16,9 +16,11 @@ class VerifyMail extends Mailable
      *
      * @return void
      */
-    public function __construct($data)
+
+    public $details;
+    public function __construct($details)
     {
-        $this->data = $data;
+        $this->details = $details;
     }
 
     /**
@@ -28,7 +30,6 @@ class VerifyMail extends Mailable
      */
     public function build()
     {
-        return $this->subject('コード認証')
-            ->view('emails.verifymail');
+        return $this->subject('コード認証')->view('emails.verifymail');
     }
 }

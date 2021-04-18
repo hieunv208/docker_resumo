@@ -34,10 +34,11 @@ class LoginController extends Controller
                 $sms_code = mt_rand(100000, 999999);
                 //update code gen
                 $sms_update = User::where('email', $email)->update(['code_sms' => $sms_code]);
-                $data = [
+                $details = [
                     'sms_code' => $sms_code,
                 ];
-                Mail::to($email)->send((new VerifyMail($data)));
+
+                Mail::to($email)->send(new VerifyMail(['sms_code' => $sms_code]));
                 return response()->json([
                     'message' => 'Operation successfully'
                 ], 200);
