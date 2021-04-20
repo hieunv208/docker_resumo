@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
@@ -27,11 +28,17 @@ class User extends Authenticatable
         return $this->hasMany(Support::class);
     }
 
+    public function routeNotificationForSMS(Notification $notification=null)
+    {
+        return $this->phone_number;
+    }
+
 
     protected $table = 'users';
     protected $fillable = [
         'email',
         'name',
+        'phone_number',
         'active',
         'user_type',
         'code_sms'
@@ -55,4 +62,6 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+
 }

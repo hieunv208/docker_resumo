@@ -190,30 +190,13 @@ class LoginController extends Controller
         $phone_number = $request->phone_number;
         $sms_code = mt_rand(100000, 999999);
         $usr = User::where('phone_number', $phone_number)->first();
-        if ($usr) {
-            $sms_update = User::where('email', $usr->email)
-                ->update(['code_sms' => $sms_code]);
-            $account_sid = getenv("TWILIO_SID");
-            $auth_token = getenv("TWILIO_AUTH_TOKEN");
-            $twilio_number = getenv("TWILIO_NUMBER");
-            $client = new Client($account_sid, $auth_token);
-            $phonenumber = substr($phone_number, 1);
-            $phone_format = "+84";
-            $phone_format .= "$phonenumber";
-            $body = "電話番号:" . $phone_format;
-            $body .= "コード認証: " . $sms_code;
-            $client->messages->create($phone_format,
-                ['from' => $twilio_number, 'body' => $body]);
-            return response()->json([
-                'message' => 'Send code to verify',
-                'status' => Response::HTTP_OK
-            ], Response::HTTP_OK);
 
-        } else {
-            $user = new User();
-            $user->phone_number = $phone_number;
-            $user->code_sms = $sms_code;
-            $user->save();
+        if ($usr == null) {
+            $user = User::create([
+                'phone_number' => $phone_number,
+                'code_sms' => $sms_code,
+            ]);
+
             $account_sid = getenv("TWILIO_SID");
             $auth_token = getenv("TWILIO_AUTH_TOKEN");
             $twilio_number = getenv("TWILIO_NUMBER");
@@ -230,6 +213,25 @@ class LoginController extends Controller
                 'message' => 'Please register',
                 'status' => Response::HTTP_ACCEPTED
             ], Response::HTTP_ACCEPTED);
+
+        } else {
+            $usr->update(['code_sms' => $sms_code]);
+            $account_sid = getenv("TWILIO_SID");
+            $auth_token = getenv("TWILIO_AUTH_TOKEN");
+            $twilio_number = getenv("TWILIO_NUMBER");
+            $client = new Client($account_sid, $auth_token);
+            $phonenumber = substr($phone_number, 1);
+            $phone_format = "+84";
+            $phone_format .= "$phonenumber";
+            $body = "電話番号:" . $phone_format;
+            $body .= "コード認証: " . $sms_code;
+            $client->messages->create($phone_format,
+                ['from' => $twilio_number, 'body' => $body]);
+            return response()->json([
+                'message' => 'Send code to verify',
+                'status' => Response::HTTP_OK
+            ], Response::HTTP_OK);
+
         }
     }
 
