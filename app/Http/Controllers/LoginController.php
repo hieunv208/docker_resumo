@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PostCodePhoneRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\UserInfoGakkuseiRequest;
 use App\Http\Requests\UserInfoRequest;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Models\UserInfo;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
 use Validator;
 use Twilio\Rest\Client;
@@ -40,14 +42,16 @@ class LoginController extends Controller
 
                 Mail::to($email)->send(new VerifyMail(['sms_code' => $sms_code]));
                 return response()->json([
-                    'message' => 'Operation successfully'
-                ], 200);
+                    'message' => 'Operation successfully',
+                    'status' => Response::HTTP_OK
+                ], Response::HTTP_OK);
 
 
             } else {
                 return response()->json([
-                    'message' => 'Login by number phone instead'
-                ], 404);
+                    'message' => 'Login by number phone instead',
+                    'status' => Response::HTTP_NO_CONTENT
+                ], Response::HTTP_NO_CONTENT);
             }
         }
     }
@@ -82,12 +86,14 @@ class LoginController extends Controller
                     'message' => 'Operation sucessfully',
                     'data' => $data,
                     'token' => $user_code->createToken('myapptoken')->plainTextToken,
+                    'status' => Response::HTTP_CREATED
 
-                ], 200);
+                ], Response::HTTP_CREATED);
             } else {
                 return response()->json([
-                    'message' => 'Bad credentials'
-                ], 403);
+                    'message' => 'Bad credentials',
+                    'status' => Response::HTTP_FORBIDDEN
+                ],  Response::HTTP_FORBIDDEN);
             }
 
         }
@@ -102,7 +108,7 @@ class LoginController extends Controller
         $validator = Validator::make($request->all(), $LoginRequest->rules(), $LoginRequest->messages());
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         $user_type = $request->user_type;
         $user_name = $request->name;
@@ -113,14 +119,14 @@ class LoginController extends Controller
             $validator = Validator::make($request->all(), $userInfoRequest->rules(), $userInfoRequest->messages());
 
             if ($validator->fails()) {
-                return response()->json($validator->errors(), 422);
+                return response()->json($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
             }
         } else {
             $LoginRequest = New UserInfoGakkuseiRequest();
             $validator = Validator::make($request->all(), $LoginRequest->rules(), $LoginRequest->messages());
 
             if ($validator->fails()) {
-                return response()->json($validator->errors(), 422);
+                return response()->json($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
             }
         }
         $time = Carbon::now()->format("Y-m-d H:m:s");
@@ -154,7 +160,8 @@ class LoginController extends Controller
                 'message' => 'Operation sucessfully',
                 'data' => $user,
                 'token' => $user->createToken('myapptoken')->plainTextToken,
-            ], 200);
+                'status' => Response::HTTP_CREATED
+            ], Response::HTTP_CREATED);
         } else {
             if ($user->user_profile === null) {
                 $dob = $request->dob;
@@ -173,7 +180,8 @@ class LoginController extends Controller
                 'message' => 'Operation sucessfully',
                 'data' => $user,
                 'token' => $user->createToken('myapptoken')->plainTextToken,
-            ], 200);
+                'status' => Response::HTTP_CREATED
+            ], Response::HTTP_CREATED);
         }
     }
 
@@ -197,8 +205,9 @@ class LoginController extends Controller
             $client->messages->create($phone_format,
                 ['from' => $twilio_number, 'body' => $body]);
             return response()->json([
-                'message' => 'Send code to verify'
-            ], 200);
+                'message' => 'Send code to verify',
+                'status' => Response::HTTP_OK
+            ], Response::HTTP_OK);
 
         } else {
             $user = new User();
@@ -219,7 +228,8 @@ class LoginController extends Controller
 
             return response()->json([
                 'message' => 'Please register',
-            ], 200);
+                'status' => Response::HTTP_ACCEPTED
+            ], Response::HTTP_ACCEPTED);
         }
     }
 
@@ -227,18 +237,26 @@ class LoginController extends Controller
     {
         $phone_number = $request->phone_number;
         $sms_code = $request->sms_code;
+        $phoneVerifyRequest = New PostCodePhoneRequest();
+        $validator = Validator::make($request->all(), $phoneVerifyRequest->rules(), $phoneVerifyRequest->messages());
 
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), Response::HTTP_PRECONDITION_REQUIRED);
+        }
         $usr = User::where('phone_number', $phone_number)->where('code_sms', $sms_code)->first();
+
         if ($usr) {
             return response()->json([
                 'message' => 'Operation sucessfully',
                 'data' => $usr,
                 'token' => $usr->createToken('myapptoken')->plainTextToken,
-            ], 200);
+                'status' => Response::HTTP_OK
+            ], Response::HTTP_OK);
         } else {
             return response()->json([
-                'message' => 'Nhap sai , nhap lai',
-            ], 200);
+                'message' => 'Wrong passcode, please try again',
+                'status' => Response::HTTP_PRECONDITION_FAILED
+            ], Response::HTTP_PRECONDITION_FAILED);
         }
 
     }
