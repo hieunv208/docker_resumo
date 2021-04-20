@@ -50,8 +50,8 @@ class LoginController extends Controller
             } else {
                 return response()->json([
                     'message' => 'Login by number phone instead',
-                    'status' => Response::HTTP_NO_CONTENT
-                ], Response::HTTP_NO_CONTENT);
+                    'status' => Response::HTTP_ACCEPTED
+                ], Response::HTTP_ACCEPTED);
             }
         }
     }
