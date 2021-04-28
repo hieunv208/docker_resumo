@@ -26,12 +26,12 @@ Route::get('/demo', function () {
 
 //Protected route
 Route::group(['middleware' => ['auth:sanctum']], function(){
-    Route::post('/support', [SupportController::class, 'postSupport']);
     Route::post('/logout', [LoginController::class, 'logout']);
     Route::put('/update-email', [UpdateProfileController::class, 'updateMail']);
     Route::put('/update-mobile', [UpdateProfileController::class, 'updatePhone']);
 
 });
+Route::post('/support', [SupportController::class, 'postSupport']);
 Route::post('/login_email',[LoginController::class, 'postCodeEmail']);
 Route::post('/login_request_email', [LoginController::class, 'emailLogin']);
 Route::post('/login_request_mobile', [LoginController::class, 'phoneLogin']);
